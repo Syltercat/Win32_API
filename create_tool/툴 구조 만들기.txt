@@ -1,4 +1,4 @@
-<툴 구조 만들기>
+[툴 구조 만들기]
 
 * 툴을 만드는 이유: 데이터와 코드를 구분하기 위해, 
 			  프로그래머가 아닌 각 분야에 필요한 다양한 데이터를 만들기 위해
@@ -42,3 +42,47 @@
 4) 위치와 크기 고정
   - WM_MOVE	(메인 윈도우와 함께 다이얼로그도 이동)
   - WM_SIZE    	(메인 윈도우 크기 고정)
+
+<3단계>
+  - 최대화 버튼 비활성화: CreateWindow의 WS_OVERLAPPEDWINDOW 수정
+
+[파일 열기 및 저장]
+* 메뉴 -> WM_COMMAND에서 발생 -> LOWORD(wParam)아이디 입력됨
+
+* 파일 저장 및 열기 다이얼로그의 역할
+  - 사용자 인터페이스
+  - 실제 저장은 C함수, C++함수, Win32 API 사용
+
+* 파일 열기 다이얼로그 설정과 생성
+  - 고정된 코드
+  - OPENFILENAME  셋팅 -> <Commdlg.h>
+  - GetOpenFileName() 호출
+  - .nFilterIndex: 파일 인덱스 (*1부터 시작)
+
+[툴 구조 응용하기]
+* 메인 윈도우 외에 일반 윈도우를 생성하는 순서
+1) 메인 윈도우 외에 생성하려는 윈도우를 설정하고 윈도우 프로시져를 등록
+
+2) 윈도우 클래스와 프로스져 등록
+  - 기존 윈도우 클래스 활용
+  - 기존 프로시져 활용
+
+3) 윈도우 화면 조절 및 생성
+  - WM_CREATE에서 크기 설정 및 생성
+  - MoveWindow() 사용
+  + 전체 화면 해상도 구하기
+	GetSystemMetrics(SM_CXSCREEN)
+	GetSystemMetrics(SM_CYSCREEN)
+  + 비율에 따른 윈도우 크기 구하기
+	75%의 길이 = 전체 길이 * 0.75
+  + 윈도우 생성과 위치 설정
+	- CreateWindow()
+	   WS_PRPUP|WS_CAPTION|
+	   WS_THICKFRAME|WS_VISIBLE
+
+4) 메뉴 다이얼로그 생성 및 이동
+  - CreateDialog()
+  - MoveWindow()
+
+5) 다이얼로그 해제
+  - DestroyWindow()

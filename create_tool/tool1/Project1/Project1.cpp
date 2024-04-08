@@ -4,6 +4,8 @@
 #include "pch.h"
 #include "framework.h"
 #include "Project1.h"
+#include <windows.h>
+#include <commdlg.h>
 
 #define MAX_LOADSTRING 100
 
@@ -16,6 +18,7 @@ WCHAR szWindowClass[MAX_LOADSTRING];            // 기본 창 클래스 이름�
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
+
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 
 INT_PTR CALLBACK    MenuDlg(HWND, UINT, WPARAM, LPARAM);    // (1단계) 다이얼로그 프로시져
@@ -68,6 +71,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 //
 //  용도: 창 클래스를 등록합니다.
 //
+
+// 메인 윈도우에 대한 부분, 일반 윈도우도 이와 성질이 같기 때문에 이 구조를 일반 윈도우도 그대로 사용하면 됨
+// 단 일반 윈도우에서는 lpszMenuName을 사용하지 않을 것이고, lpszClassName을 다르게 설정해 줄 것이다.
 ATOM MyRegisterClass(HINSTANCE hInstance)
 {
     WNDCLASSEXW wcex;
@@ -85,7 +91,6 @@ ATOM MyRegisterClass(HINSTANCE hInstance)
     wcex.lpszMenuName   = MAKEINTRESOURCEW(IDC_PROJECT1);
     wcex.lpszClassName  = szWindowClass;
     wcex.hIconSm        = LoadIcon(wcex.hInstance, MAKEINTRESOURCE(IDI_SMALL));
-
     return RegisterClassExW(&wcex);
 }
 
@@ -105,7 +110,8 @@ BOOL InitInstance(HINSTANCE hInstance, int nCmdShow)
 
    // 윈도우 생성 부분의 핸들 retrun에 전역 변수를 이용
    HWND hWnd;
-   g_hWnd = hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW,
+   // 3단계: 이 코드에서는 윈도우 크기를 고정시켰기 때문에 최대화 버튼이 필요 없어서 비활성화 시켜준다.
+   g_hWnd = hWnd = CreateWindowW(szWindowClass, szTitle, WS_OVERLAPPEDWINDOW & ~WS_MAXIMIZEBOX,
       CW_USEDEFAULT, 0, CW_USEDEFAULT, 0, nullptr, nullptr, hInstance, nullptr);
 
    if (!hWnd)
@@ -135,6 +141,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     RECT rtWnd{ 0, 0, 800,400 }, rtDlg;
     // 윈도우와 다이얼로그의 크기를 저장할 변수 => static으로 선언해서 값을 유지
     static SIZE szWndSize, szDlgSize;
+    OPENFILENAME  ofn;
+    // static으로 선언이 안되어있으면 열기 다이얼로그가 열리지 않는다. 
+    static char strFileTitle[MAX_PATH], strFileExtension[10], strFile[100];
     switch (message)
     {
     case WM_CREATE:
@@ -170,6 +179,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
         MoveWindow(hWnd, rtWnd.left, rtWnd.top, szWndSize.cx, szWndSize.cy, TRUE);
         MoveWindow(g_hMenuWnd, rtWnd.right, rtWnd.top, szDlgSize.cx, szDlgSize.cy, TRUE);
         break;
+ 
 
     case WM_COMMAND:
         {
@@ -179,6 +189,58 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             {
             // 실행과 동시에 다이얼로그 창을 띄우고 싶었는데 아래 조건으로 인해 도움말 버튼을 눌러줘야함.
             // 그래서 위의 WM_CREATE 메세지 처리기 추가
+            
+            // 파일 열기
+            case ID_32771:
+                ZeroMemory(&ofn, sizeof(ofn));
+                ofn.lStructSize = sizeof(ofn);
+                ofn.hwndOwner = hWnd;
+                // 프로젝트 속성에서 멀티바이트로 바꾸지 않으면 에러생김
+                ofn.lpstrTitle = "파일을 선택해주세요.";
+                ofn.lpstrFileTitle = strFileTitle;
+                ofn.lpstrFile = strFile;
+                ofn.lpstrFilter = "임시 파일(*.txt)\0*.txt\0모든 파일(*.*)\0*.*\0";
+                ofn.nMaxFile = MAX_PATH;
+                ofn.nMaxFileTitle = MAX_PATH;
+
+                if (GetOpenFileName(&ofn) != 0) {
+                    switch (ofn.nFilterIndex) {
+                    case 1:
+                        MessageBox(0, strFile, "임시 파일", MB_OK | MB_ICONINFORMATION);
+                        break;
+                    case 2:
+                        MessageBox(0, strFile, "모든 파일", MB_OK | MB_ICONINFORMATION);
+                        break;
+                    }
+                }
+                break;
+
+            // 파일 저장
+            case ID_32772:
+                ZeroMemory(&ofn, sizeof(ofn));
+                ofn.lStructSize = sizeof(ofn);
+                ofn.hwndOwner = hWnd;
+                // 프로젝트 속성에서 멀티바이트로 바꾸지 않으면 에러생김
+                ofn.lpstrTitle = "저장할 파일을 선택해주세요.";
+                ofn.lpstrFileTitle = strFileTitle;
+                ofn.lpstrFile = strFile;
+                ofn.lpstrFilter = "임시 파일(*.txt)\0*.txt\0모든 파일(*.*)\0*.*\0";
+                ofn.nMaxFile = MAX_PATH;
+                ofn.nMaxFileTitle = MAX_PATH;
+
+                // 저장과는 이 함수만 다름
+                if (GetSaveFileName(&ofn) != 0) {
+                    switch (ofn.nFilterIndex) {
+                    case 1:
+                        MessageBox(0, strFile, "임시 파일", MB_OK | MB_ICONINFORMATION);
+                        break;
+                    case 2:
+                        MessageBox(0, strFile, "모든 파일", MB_OK | MB_ICONINFORMATION);
+                        break;
+                    }
+                }
+                break;
+
             case IDM_ABOUT:
                 // 전역변수 사용, MenuDlg로 변경
                 g_hMenuWnd = CreateDialog(hInst, MAKEINTRESOURCE(IDD_DIALOG1), hWnd, MenuDlg);
